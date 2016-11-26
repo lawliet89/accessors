@@ -17,7 +17,7 @@ extern crate syn;
 use proc_macro::TokenStream;
 use std::collections::BTreeMap;
 
-#[proc_macro_derive(getters, attributes(getters))]
+#[proc_macro_derive(getters, attributes(getter, getters))]
 pub fn derive_getters(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input(&input.to_string()).unwrap();
     let expanded = expand_getters(ast);
@@ -33,15 +33,27 @@ fn expand_getters(ast: syn::MacroInput) -> quote::Tokens {
 
     let getters = match ast.body {
         syn::Body::Struct(syn::VariantData::Struct(ref fields)) => {
-            fields.iter().map(|f| {
+            fields.iter().filter_map(|f| {
                 let field_name = f.ident.as_ref().unwrap();
                 let field_ty = &f.ty;
 
-                quote! {
+                let mut field_attrs = f.attrs.iter().filter(|a| a.name() == "getter");
+                let config = config_from(&mut field_attrs, &["ignore"]);
+
+                let ignore_default = syn::Lit::Bool(false);
+                let ignore = match *config.get("ignore").unwrap_or(&ignore_default) {
+                    syn::Lit::Bool(b) => b,
+                    ref val => panic!("'ignore' must be a boolean value, not {:?}", val),
+                };
+                if ignore {
+                    return None;
+                }
+
+                Some(quote! {
                     pub fn #field_name(&self) -> &#field_ty {
                         &self.#field_name
                     }
-                }
+                })
             })
         }
         _ => panic!("#[derive(getters)] can only be used with braced structs"),
@@ -54,7 +66,7 @@ fn expand_getters(ast: syn::MacroInput) -> quote::Tokens {
     }
 }
 
-#[proc_macro_derive(setters, attributes(setters))]
+#[proc_macro_derive(setters, attributes(setter, setters))]
 pub fn derive_setters(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input(&input.to_string()).unwrap();
     let expanded = expand_setters(ast);
@@ -80,25 +92,37 @@ fn expand_setters(ast: syn::MacroInput) -> quote::Tokens {
 
     let setters = match ast.body {
         syn::Body::Struct(syn::VariantData::Struct(ref fields)) => {
-            fields.iter().map(|f| {
+            fields.iter().filter_map(|f| {
                 let field_name = f.ident.as_ref().unwrap();
                 let field_ty = &f.ty;
 
+                let mut field_attrs = f.attrs.iter().filter(|a| a.name() == "setter");
+                let config = config_from(&mut field_attrs, &["ignore"]);
+
+                let ignore_default = syn::Lit::Bool(false);
+                let ignore = match *config.get("ignore").unwrap_or(&ignore_default) {
+                    syn::Lit::Bool(b) => b,
+                    ref val => panic!("'ignore' must be a boolean value, not {:?}", val),
+                };
+                if ignore {
+                    return None;
+                }
+
                 let set_fn_name: syn::Ident = format!("set_{}", field_name).into();
                 if into {
-                    quote! {
+                    Some(quote! {
                         pub fn #set_fn_name<T>(&mut self, value: T)
                             where T: Into<#field_ty>
                         {
                             self.#field_name = value.into();
                         }
-                    }
+                    })
                 } else {
-                    quote! {
+                    Some(quote! {
                         pub fn #set_fn_name(&mut self, value: #field_ty) {
                             self.#field_name = value;
                         }
-                    }
+                    })
                 }
             })
         }

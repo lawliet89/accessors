@@ -6,11 +6,24 @@ extern crate accessors;
 #[derive(getters, setters)]
 #[setters(into)]
 struct Simple {
-    field: String,
+    normal_field: String,
+
+    #[getter(ignore)]
+    ignored_field: String,
+}
+
+impl Simple {
+    fn ignored_field(&self) -> &str {
+        &self.ignored_field
+    }
 }
 
 fn main() {
-    let mut s = Simple { field: "hello".to_owned() };
-    println!("{}", s.field());
-    s.set_field("there");
+    let mut s = Simple {
+        normal_field: "hello".to_owned(),
+        ignored_field: "".to_string(),
+    };
+
+    println!("{}", s.normal_field());
+    s.set_normal_field("there");
 }
