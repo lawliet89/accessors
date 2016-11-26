@@ -38,7 +38,7 @@ fn expand_getters(ast: syn::MacroInput) -> quote::Tokens {
                 let field_ty = &f.ty;
 
                 let mut field_attrs = f.attrs.iter().filter(|a| a.name() == "getter");
-                let config = config_from(&mut field_attrs, &["ignore"]);
+                let config = config_from(&mut field_attrs, &["ignore", "return_type"]);
 
                 let ignore_default = syn::Lit::Bool(false);
                 let ignore = match *config.get("ignore").unwrap_or(&ignore_default) {
@@ -49,8 +49,14 @@ fn expand_getters(ast: syn::MacroInput) -> quote::Tokens {
                     return None;
                 }
 
+                let return_type = match config.get("return_type") {
+                    Some(&syn::Lit::Str(ref v, _)) => syn::parse_type(v).unwrap(),
+                    None => syn::parse_type(&quote!(&#field_ty).to_string()).unwrap(),
+                    ref val => panic!("'return_type' must be a string value, not {:?}", val),
+                };
+
                 Some(quote! {
-                    pub fn #field_name(&self) -> &#field_ty {
+                    pub fn #field_name(&self) -> #return_type {
                         &self.#field_name
                     }
                 })
