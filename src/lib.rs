@@ -9,8 +9,6 @@
 // good refactoring once I figure out the basic ideas.  Do not use use this
 // as an example of good style.
 
-#[macro_use]
-extern crate log;
 extern crate proc_macro;
 #[macro_use]
 extern crate quote;
