@@ -1,6 +1,6 @@
 [package]
-name = "accessors"
-version = "0.0.3"
+name = "telebot-derive"
+version = "0.0.6"
 authors = ["Eric Kidd <git@randomhacks.net>"]
 
 description = "(WIP) Getters and setters for Rust using macros 1.1"
