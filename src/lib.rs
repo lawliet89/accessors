@@ -3,8 +3,6 @@
 //!
 //! [example code]: https://github.com/dtolnay/syn
 
-#![feature(proc_macro, proc_macro_lib)]
-
 // I threw this code together in just a few minutes, and it could use a
 // good refactoring once I figure out the basic ideas.  Do not use use this
 // as an example of good style.
